@@ -44,10 +44,15 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   chart: {
-    height: 200,
+    height: 150,
     width: 300
   }
 });
+
+function appendMeasure(current, toAppend, wSize=-1) {
+  const l = current.push(toAppend);
+  return l.size > wSize && wSize > 0 ? l.shift() : l;
+}
 
 class MotionScience extends Component {
   constructor(props: {}) {
@@ -56,28 +61,39 @@ class MotionScience extends Component {
       xAccel: new List([0]),
       yAccel: new List([0]),
       zAccel: new List([0]),
+      xGyro: new List([0]),
+      yGyro: new List([0]),
+      zGyro: new List([0]),
     }
   }
 
   componentDidMount() {
     Accelerometer.setAccelerometerUpdateInterval(.1);
+    Gyroscope.setGyroUpdateInterval(.1);
     const wSize = 100;
     DeviceEventEmitter.addListener('AccelerationData', ({acceleration}) => {
       const {xAccel, yAccel, zAccel} = this.state;
-      const newXAccel = xAccel.push(acceleration.x);
-      const newYAccel = yAccel.push(acceleration.y);
-      const newZAccel = zAccel.push(acceleration.z);
       this.setState({
-        xAccel: newXAccel.size > wSize ? newXAccel.shift() : newXAccel,
-        yAccel: newYAccel.size > wSize ? newYAccel.shift() : newYAccel,
-        zAccel: newZAccel.size > wSize ? newZAccel.shift() : newZAccel,
+        xAccel: appendMeasure(xAccel, acceleration.x, wSize),
+        yAccel: appendMeasure(yAccel, acceleration.y, wSize),
+        zAccel: appendMeasure(zAccel, acceleration.z, wSize)
+      });
+    });
+    DeviceEventEmitter.addListener('GyroData', ({rotationRate}) => {
+      const {xGyro, yGyro, zGyro} = this.state;
+      this.setState({
+        xGyro: appendMeasure(xGyro, rotationRate.x, wSize),
+        yGyro: appendMeasure(yGyro, rotationRate.y, wSize),
+        zGyro: appendMeasure(zGyro, rotationRate.z, wSize)
       });
     });
     Accelerometer.startAccelerometerUpdates();
+    Gyroscope.startGyroUpdates();
   }
 
   render() {
-    const {xAccel, yAccel, zAccel} = this.state;
+    const {xAccel, yAccel, zAccel,
+           xGyro, yGyro, zGyro} = this.state;
     return (
       <View style={styles.container}>
         <Text style={styles.sectionTitle}>
@@ -109,6 +125,36 @@ class MotionScience extends Component {
                  ]}
                  verticalGridStep={5}
                  xLabels={xAccel.map(() => "").toJS()}
+        />
+        <Text style={styles.sectionTitle}>
+          Gyroscope
+        </Text>
+        <RNChart style={styles.chart}
+                 animationDuration={0.01}
+                 showAxis={false}
+                 showXAxisLabels={false}
+                 chartData={[
+                    {
+                        name: 'LineChart',
+                        color: 'red',
+                        lineWidth: 2,
+                        data: xGyro.toJS(),
+                    },
+                    {
+                        name: 'LineChart',
+                        color: 'green',
+                        lineWidth: 2,
+                        data: yGyro.toJS(),
+                    },
+                    {
+                        name: 'LineChart',
+                        color: 'blue',
+                        lineWidth: 2,
+                        data: zGyro.toJS(),
+                    }
+                 ]}
+                 verticalGridStep={5}
+                 xLabels={xGyro.map(() => "").toJS()}
                  />
       </View>
     );
@@ -116,6 +162,7 @@ class MotionScience extends Component {
 
   componentWillUnmount() {
     Accelerometer.stopAccelerometerUpdates();
+    Gyroscope.stopGyroUpdates();
   }
 }
 
