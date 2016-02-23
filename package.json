@@ -7,7 +7,9 @@
     "postinstall": "rnpm link"
   },
   "dependencies": {
+    "immutable": "^3.7.6",
     "react-native": "^0.20.0",
+    "react-native-chart": "^0.1.10",
     "react-native-motion-manager": "0.0.6"
   },
   "devDependencies": {

@@ -13,10 +13,18 @@ import React, {
 } from 'react-native';
 
 import {
+  Range,
+  Map,
+  List
+} from "immutable";
+
+import {
   Accelerometer,
   Gyroscope,
   Magnetometer
 } from 'NativeModules';
+
+import RNChart from 'react-native-chart';
 
 const styles = StyleSheet.create({
   container: {
@@ -25,50 +33,83 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
   },
-  welcome: {
+  sectionTitle: {
     fontSize: 20,
     textAlign: 'center',
     margin: 10,
   },
-  instructions: {
+  sectionItem: {
     textAlign: 'center',
     color: '#333333',
     marginBottom: 5,
   },
+  chart: {
+    height: 200,
+    width: 300
+  }
 });
 
 class MotionScience extends Component {
   constructor(props: {}) {
     super(props);
     this.state = {
-      acceleration: { x: 0, y: 0, z: 0 }
+      xAccel: new List([0]),
+      yAccel: new List([0]),
+      zAccel: new List([0]),
     }
   }
 
   componentDidMount() {
-    Accelerometer.setAccelerometerUpdateInterval(0.1);
+    Accelerometer.setAccelerometerUpdateInterval(.1);
+    const wSize = 100;
     DeviceEventEmitter.addListener('AccelerationData', ({acceleration}) => {
-      this.setState({ acceleration: acceleration });
+      const {xAccel, yAccel, zAccel} = this.state;
+      const newXAccel = xAccel.push(acceleration.x);
+      const newYAccel = yAccel.push(acceleration.y);
+      const newZAccel = zAccel.push(acceleration.z);
+      this.setState({
+        xAccel: newXAccel.size > wSize ? newXAccel.shift() : newXAccel,
+        yAccel: newYAccel.size > wSize ? newYAccel.shift() : newYAccel,
+        zAccel: newZAccel.size > wSize ? newZAccel.shift() : newZAccel,
+      });
     });
     Accelerometer.startAccelerometerUpdates();
   }
 
   render() {
-    const {acceleration} = this.state;
+    const {xAccel, yAccel, zAccel} = this.state;
     return (
       <View style={styles.container}>
-        <Text style={styles.welcome}>
+        <Text style={styles.sectionTitle}>
           Accelerometer
         </Text>
-        <Text style={styles.instructions}>
-          x: {acceleration.x.toFixed(2)}
-        </Text>
-        <Text style={styles.instructions}>
-          y: {acceleration.y.toFixed(2)}
-        </Text>
-        <Text style={styles.instructions}>
-          z: {acceleration.z.toFixed(2)}
-        </Text>
+        <RNChart style={styles.chart}
+                 animationDuration={0.01}
+                 showAxis={false}
+                 showXAxisLabels={false}
+                 chartData={[
+                    {
+                        name: 'LineChart',
+                        color: 'red',
+                        lineWidth: 2,
+                        data: xAccel.toJS(),
+                    },
+                    {
+                        name: 'LineChart',
+                        color: 'green',
+                        lineWidth: 2,
+                        data: yAccel.toJS(),
+                    },
+                    {
+                        name: 'LineChart',
+                        color: 'blue',
+                        lineWidth: 2,
+                        data: zAccel.toJS(),
+                    }
+                 ]}
+                 verticalGridStep={5}
+                 xLabels={xAccel.map(() => "").toJS()}
+                 />
       </View>
     );
   }
