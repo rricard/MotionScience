@@ -8,27 +8,15 @@ import React, {
   Component,
   StyleSheet,
   Text,
-  View
+  View,
+  DeviceEventEmitter
 } from 'react-native';
 
-class MotionScience extends Component {
-  render() {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit index.ios.js
-        </Text>
-        <Text style={styles.instructions}>
-          Press Cmd+R to reload,{'\n'}
-          Cmd+D or shake for dev menu
-        </Text>
-      </View>
-    );
-  }
-}
+import {
+  Accelerometer,
+  Gyroscope,
+  Magnetometer
+} from 'NativeModules';
 
 const styles = StyleSheet.create({
   container: {
@@ -48,5 +36,46 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
 });
+
+class MotionScience extends Component {
+  constructor(props: {}) {
+    super(props);
+    this.state = {
+      acceleration: { x: 0, y: 0, z: 0 }
+    }
+  }
+
+  componentDidMount() {
+    Accelerometer.setAccelerometerUpdateInterval(0.1);
+    DeviceEventEmitter.addListener('AccelerationData', ({acceleration}) => {
+      this.setState({ acceleration: acceleration });
+    });
+    Accelerometer.startAccelerometerUpdates();
+  }
+
+  render() {
+    const {acceleration} = this.state;
+    return (
+      <View style={styles.container}>
+        <Text style={styles.welcome}>
+          Accelerometer
+        </Text>
+        <Text style={styles.instructions}>
+          x: {acceleration.x.toFixed(2)}
+        </Text>
+        <Text style={styles.instructions}>
+          y: {acceleration.y.toFixed(2)}
+        </Text>
+        <Text style={styles.instructions}>
+          z: {acceleration.z.toFixed(2)}
+        </Text>
+      </View>
+    );
+  }
+
+  componentWillUnmount() {
+    Accelerometer.stopAccelerometerUpdates();
+  }
+}
 
 AppRegistry.registerComponent('MotionScience', () => MotionScience);
